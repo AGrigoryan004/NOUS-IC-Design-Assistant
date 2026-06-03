@@ -1,0 +1,73 @@
+module tb_thermometer_to_binary;
+
+    // Parameters
+    parameter WIDTH = 8;
+    reg  [WIDTH-1:0] thermometer_in;
+    wire [$clog2(WIDTH):0] binary_out;
+
+    // Instantiate the DUT (Device Under Test)
+    thermometer_to_binary #(.WIDTH(WIDTH)) dut (
+        .thermometer_in(thermometer_in),
+        .binary_out(binary_out)
+    );
+
+    // Task to display results
+    task display_result;
+        input [WIDTH-1:0] t_in;
+        input [$clog2(WIDTH):0] b_out;
+        integer j;
+        begin
+            $write("Thermometer Input: ");
+            for (j = WIDTH-1; j >= 0; j = j - 1)
+                $write("%b", t_in[j]);
+            $display(" | Binary Output: %0d", b_out);
+        end
+    endtask
+
+    initial begin
+        $display("==== Thermometer to Binary Converter Testbench ====");
+        // Test case 1: All zeros
+        thermometer_in = 8'b00000000;
+        #1 display_result(thermometer_in, binary_out);
+
+        // Test case 2: All ones
+        thermometer_in = 8'b11111111;
+        #1 display_result(thermometer_in, binary_out);
+
+        // Test case 3: Single one at MSB
+        thermometer_in = 8'b10000000;
+        #1 display_result(thermometer_in, binary_out);
+
+        // Test case 4: Single one at LSB
+        thermometer_in = 8'b00000001;
+        #1 display_result(thermometer_in, binary_out);
+
+        // Test case 5: 3 consecutive ones at MSB
+        thermometer_in = 8'b11100000;
+        #1 display_result(thermometer_in, binary_out);
+
+        // Test case 6: 5 consecutive ones at MSB
+        thermometer_in = 8'b11111000;
+        #1 display_result(thermometer_in, binary_out);
+
+        // Test case 7: 4 consecutive ones at MSB, rest zeros
+        thermometer_in = 8'b11110000;
+        #1 display_result(thermometer_in, binary_out);
+
+        // Test case 8: Non-consecutive ones (should count only consecutive from MSB)
+        thermometer_in = 8'b11010101;
+        #1 display_result(thermometer_in, binary_out);
+
+        // Test case 9: Random pattern
+        thermometer_in = 8'b10111111;
+        #1 display_result(thermometer_in, binary_out);
+
+        // Test case 10: 6 consecutive ones at MSB
+        thermometer_in = 8'b11111100;
+        #1 display_result(thermometer_in, binary_out);
+
+        $display("==== Testbench Completed ====");
+        $finish;
+    end
+
+endmodule

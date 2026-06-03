@@ -1,0 +1,38 @@
+module eeprom #
+(
+    parameter ADDR_WIDTH = 8,      // Number of address bits (memory depth = 2^ADDR_WIDTH)
+    parameter DATA_WIDTH = 8       // Number of data bits per word
+)
+(
+    input  wire                   clk,        // System clock
+    input  wire                   rst_n,      // Active-low reset
+    input  wire                   we,         // Write enable (active high)
+    input  wire                   re,         // Read enable (active high)
+    input  wire [ADDR_WIDTH-1:0]  addr,       // Address bus
+    input  wire [DATA_WIDTH-1:0]  din,        // Data input (for write)
+    output reg  [DATA_WIDTH-1:0]  dout,       // Data output (for read)
+    output reg                    ready       // Ready signal: 1 when dout is valid after read
+);
+
+    // Internal memory array
+    reg [DATA_WIDTH-1:0] mem [0:(1<<ADDR_WIDTH)-1];
+
+    // Ready signal logic
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            dout  <= {DATA_WIDTH{1'b0}};
+            ready <= 1'b0;
+        end else begin
+            if (we) begin
+                mem[addr] <= din;
+                ready <= 1'b0;
+            end else if (re) begin
+                dout <= mem[addr];
+                ready <= 1'b1;
+            end else begin
+                ready <= 1'b0;
+            end
+        end
+    end
+
+endmodule

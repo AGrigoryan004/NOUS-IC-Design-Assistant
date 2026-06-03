@@ -1,0 +1,26 @@
+module counter #(
+    parameter integer WIDTH = 8,                // Counter width in bits
+    parameter integer MAX_VALUE = 255           // Maximum count value (wraps to 0 after this)
+)(
+    input  wire clk,                            // Clock input
+    input  wire rst_n,                          // Active-low synchronous reset
+    input  wire en,                             // Enable counting
+    output reg  [WIDTH-1:0] count,              // Counter output
+    output wire wrap                            // High when counter wraps to 0
+);
+
+    // Wrap signal: asserted when counter reaches MAX_VALUE
+    assign wrap = (count == MAX_VALUE);
+
+    always @(posedge clk) begin
+        if (!rst_n) begin
+            count <= {WIDTH{1'b0}};
+        end else if (en) begin
+            if (count == MAX_VALUE)
+                count <= {WIDTH{1'b0}};
+            else
+                count <= count + 1'b1;
+        end
+    end
+
+endmodule

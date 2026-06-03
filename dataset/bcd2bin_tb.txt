@@ -1,0 +1,115 @@
+odule bcd2bin_tb;
+
+    parameter BCD_DIGITS = 3;
+    parameter BIN_WIDTH = BCD_DIGITS * 4;
+
+    reg  [4*BCD_DIGITS-1:0] bcd;
+    wire [BIN_WIDTH-1:0] bin;
+
+    integer i, k;
+
+    // Instantiate the converter
+    bcd2bin #(
+        .BCD_DIGITS(BCD_DIGITS),
+        .BIN_WIDTH(BIN_WIDTH)
+    ) uut (
+        .bcd(bcd),
+        .bin(bin)
+    );
+
+    // Task to display BCD digits
+    task display_bcd;
+        begin
+            $write("BCD = ");
+            for (k = BCD_DIGITS-1; k >= 0; k = k - 1) begin
+                $write("%0d", bcd[4*k +: 4]);
+            end
+        end
+    endtask
+
+    // Task to display results
+    task display_result;
+        begin
+            $write("Time=%0t | ", $time);
+            display_bcd();
+            $write(" | bin = %0d (0b%b)
+", bin, bin);
+        end
+    endtask
+
+    // Helper function: pack BCD digits into input vector
+    function [4*BCD_DIGITS-1:0] pack_bcd;
+        input integer d2, d1, d0;
+        begin
+            pack_bcd = {d2[3:0], d1[3:0], d0[3:0]};
+        end
+    endfunction
+
+    initial begin
+        $display("==== BCD to Binary Converter Testbench ====");
+
+        // Test case 1: 000
+        bcd = pack_bcd(0,0,0);
+        #10; display_result();
+
+        // Test case 2: 001
+        bcd = pack_bcd(0,0,1);
+        #10; display_result();
+
+        // Test case 3: 009
+        bcd = pack_bcd(0,0,9);
+        #10; display_result();
+
+        // Test case 4: 010
+        bcd = pack_bcd(0,1,0);
+        #10; display_result();
+
+        // Test case 5: 099
+        bcd = pack_bcd(0,9,9);
+        #10; display_result();
+
+        // Test case 6: 100
+        bcd = pack_bcd(1,0,0);
+        #10; display_result();
+
+        // Test case 7: 123
+        bcd = pack_bcd(1,2,3);
+        #10; display_result();
+
+        // Test case 8: 255
+        bcd = pack_bcd(2,5,5);
+        #10; display_result();
+
+        // Test case 9: 357
+        bcd = pack_bcd(3,5,7);
+        #10; display_result();
+
+        // Test case 10: 512
+        bcd = pack_bcd(5,1,2);
+        #10; display_result();
+
+        // Test case 11: 789
+        bcd = pack_bcd(7,8,9);
+        #10; display_result();
+
+        // Test case 12: 999
+        bcd = pack_bcd(9,9,9);
+        #10; display_result();
+
+        // Test case 13: Random value (085)
+        bcd = pack_bcd(0,8,5);
+        #10; display_result();
+
+        // Test case 14: Random value (370)
+        bcd = pack_bcd(3,7,0);
+        #10; display_result();
+
+        // Test case 15: Random value (502)
+        bcd = pack_bcd(5,0,2);
+        #10; display_result();
+
+        $display("Testbench completed.");
+        $finish;
+    end
+
+endmodule

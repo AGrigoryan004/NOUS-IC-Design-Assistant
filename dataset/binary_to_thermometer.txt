@@ -1,0 +1,9 @@
+module binary_to_thermometer (
+    input  [3:0] bin_in,           // 4-bit binary input
+    output [15:0] thermo_out       // 16-bit thermometer code output
+);
+
+    // Set all bits up to and including bin_in to 1
+    assign thermo_out = (16'h1 << (bin_in + 1)) - 1;
+
+endmodule

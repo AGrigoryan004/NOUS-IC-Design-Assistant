@@ -1,0 +1,47 @@
+module tb_bin_to_excess3;
+
+    reg  [3:0] bin_in;
+    wire [3:0] excess3_out;
+
+    // Instantiate the converter module
+    bin_to_excess3 uut (
+        .bin_in(bin_in),
+        .excess3_out(excess3_out)
+    );
+
+    integer i;
+
+    initial begin
+        $display("Time | Binary In | Excess-3 Out | Expected");
+        $display("------------------------------------------");
+        for (i = 0; i < 16; i = i + 1) begin
+            bin_in = i[3:0];
+            #5; // Wait for output to settle
+            $display("%4t |    %b   |     %b     |   %b", $time, bin_in, excess3_out, (i+3));
+        end
+        $finish;
+    end
+
+endmodule
+
+//------------------------------------------------------------------------------
+// Expected Simulation Output (for reference):
+// Time | Binary In | Excess-3 Out | Expected
+// ------------------------------------------
+//    0 |    0000   |     0011     |   0011
+//    5 |    0001   |     0100     |   0100
+//   10 |    0010   |     0101     |   0101
+//   15 |    0011   |     0110     |   0110
+//   20 |    0100   |     0111     |   0111
+//   25 |    0101   |     1000     |   1000
+//   30 |    0110   |     1001     |   1001
+//   35 |    0111   |     1010     |   1010
+//   40 |    1000   |     1011     |   1011
+//   45 |    1001   |     1100     |   1100
+//   50 |    1010   |     1101     |   1101
+//   55 |    1011   |     1110     |   1110
+//   60 |    1100   |     1111     |   1111
+//   65 |    1101   |     0000     |   0000
+//   70 |    1110   |     0001     |   0001
+//   75 |    1111   |     0010     |   0010
+//------------------------------------------------------------------------------

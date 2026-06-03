@@ -1,0 +1,66 @@
+module prom_tb;
+
+    parameter DATA_WIDTH = 8;
+    parameter DEPTH = 8;
+
+    reg [$clog2(DEPTH)-1:0] addr;
+    wire [DATA_WIDTH-1:0] data_out;
+
+    // Instantiate PROM
+    prom #(
+        .DATA_WIDTH(DATA_WIDTH),
+        .DEPTH(DEPTH)
+    ) dut (
+        .addr(addr),
+        .data_out(data_out)
+    );
+
+    integer i;
+
+    initial begin
+        $display("PROM Testbench - 2026-03-19");
+        $display("====================================");
+        // Test reading all addresses
+        for (i = 0; i < DEPTH; i = i + 1) begin
+            addr = i;
+            #1; // Wait for combinational logic to settle
+            $display("Read addr=%0d: data_out=0x%02X", addr, data_out);
+        end
+
+        // Test specific addresses
+        addr = 0; #1;
+        $display("Read addr=0: data_out=0x%02X (Expected: 0xA5)", data_out);
+
+        addr = 3; #1;
+        $display("Read addr=3: data_out=0x%02X (Expected: 0xFF)", data_out);
+
+        addr = 7; #1;
+        $display("Read addr=7: data_out=0x%02X (Expected: 0x78)", data_out);
+
+        addr = 5; #1;
+        $display("Read addr=5: data_out=0x%02X (Expected: 0x34)", data_out);
+
+        addr = 6; #1;
+        $display("Read addr=6: data_out=0x%02X (Expected: 0x56)", data_out);
+
+        addr = 4; #1;
+        $display("Read addr=4: data_out=0x%02X (Expected: 0x12)", data_out);
+
+        addr = 2; #1;
+        $display("Read addr=2: data_out=0x%02X (Expected: 0x7E)", data_out);
+
+        addr = 1; #1;
+        $display("Read addr=1: data_out=0x%02X (Expected: 0x3C)", data_out);
+
+        // Test out-of-range address (if DEPTH < 16)
+        if (DEPTH < 16) begin
+            addr = 15; #1;
+            $display("Read addr=15: data_out=0x%02X (Expected: 0x00)", data_out);
+        end
+
+        $display("PROM Testbench completed.");
+        #10;
+        $finish;
+    end
+
+endmodule

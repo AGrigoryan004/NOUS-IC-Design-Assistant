@@ -1,0 +1,39 @@
+// Parametrized Pulse Code Modulation (PCM) Module
+// Author: Natalya Golchenko (natalyag)
+// Date: 2026-03-19
+
+module pcm #
+(
+    parameter BIT_WIDTH = 8,         // Number of bits per PCM sample
+    parameter SAMPLE_RATE_DIV = 10   // Divider for sample rate (input clk divided by this value)
+)
+(
+    input wire clk,                  // System clock
+    input wire rst_n,                // Active-low reset
+    input wire [BIT_WIDTH-1:0] analog_in, // Input analog sample (already digitized for simulation)
+    output reg [BIT_WIDTH-1:0] pcm_out,   // PCM output sample
+    output reg sample_valid          // Indicates when pcm_out is valid
+);
+
+    // Internal sample rate divider counter
+    reg [$clog2(SAMPLE_RATE_DIV)-1:0] sample_cnt;
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            sample_cnt <= 0;
+            pcm_out <= 0;
+            sample_valid <= 0;
+        end else begin
+            if (sample_cnt == SAMPLE_RATE_DIV-1) begin
+                sample_cnt <= 0;
+                pcm_out <= analog_in;    // Sample the input
+                sample_valid <= 1;       // Indicate valid output
+            end else begin
+                sample_cnt <= sample_cnt + 1;
+                sample_valid <= 0;
+            end
+        end
+    end
+
+endmodule
+

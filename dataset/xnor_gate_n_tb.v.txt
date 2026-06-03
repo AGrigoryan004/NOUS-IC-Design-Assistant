@@ -1,0 +1,22 @@
+module xnor_gate_n_tb;
+    parameter N = 4;
+    reg  [N-1:0] a;
+    wire         y;
+
+    xnor_gate_n #(N) uut (
+        .a(a),
+        .y(y)
+    );
+
+    integer i;
+    initial begin
+        $display("A | Y");
+        $display("---------");
+        for (i = 0; i < 2**N; i = i + 1) begin
+            a = i;
+            #10;
+            $display("%b | %b", a, y);
+        end
+        $finish;
+    end
+endmodule

@@ -1,0 +1,64 @@
+module can_interface #(
+    parameter DATA_WIDTH = 8,      // CAN data field width (standard CAN is up to 8 bytes, but parameterized)
+    parameter ADDR_WIDTH = 8       // Address width for internal memory
+)(
+    input  wire                   clk,         // Clock
+    input  wire                   rst_n,       // Active-low reset
+
+    // CAN Request signals (from host/controller)
+    input  wire                   req_valid,   // Request valid
+    input  wire [ADDR_WIDTH-1:0]  req_addr,    // Request address
+    input  wire [DATA_WIDTH-1:0]  req_wdata,   // Write data
+    input  wire                   req_write,   // Write enable (1=write, 0=read)
+    output wire                   req_ready,   // Ready to accept request
+
+    // CAN Response signals (to host/controller)
+    output reg                    resp_valid,  // Response valid
+    output reg  [DATA_WIDTH-1:0]  resp_rdata,  // Response read data
+    input  wire                   resp_ready   // Host ready to accept response
+);
+
+    // Simple memory for demonstration
+    reg [DATA_WIDTH-1:0] mem [0:(1<<ADDR_WIDTH)-1];
+
+    // Handshake logic
+    reg busy;
+
+    assign req_ready = !busy;
+
+    integer idx;
+    // Optional: memory initialization on reset
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            busy      <= 1'b0;
+            resp_valid <= 1'b0;
+            resp_rdata <= {DATA_WIDTH{1'b0}};
+            // Clear memory on reset
+            for (idx = 0; idx < (1<<ADDR_WIDTH); idx = idx + 1)
+                mem[idx] <= {DATA_WIDTH{1'b0}};
+        end else begin
+            // Clear response valid if host accepted
+            if (resp_valid && resp_ready)
+                resp_valid <= 1'b0;
+
+            // Accept request if not busy
+            if (req_valid && req_ready) begin
+                busy <= 1'b1;
+                if (req_write) begin
+                    // Write operation
+                    mem[req_addr] <= req_wdata;
+                    resp_valid    <= 1'b1;
+                    resp_rdata    <= {DATA_WIDTH{1'b0}}; // No read data on write
+                end else begin
+                    // Read operation
+                    resp_valid <= 1'b1;
+                    resp_rdata <= mem[req_addr];
+                end
+            end else if (resp_valid && resp_ready) begin
+                // Transaction complete
+                busy <= 1'b0;
+            end
+        end
+    end
+
+endmodule

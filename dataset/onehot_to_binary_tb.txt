@@ -1,0 +1,59 @@
+module tb_onehot_to_binary;
+
+    reg  [15:0] onehot_in;
+    wire [3:0]  bin_out;
+
+    // Instantiate the one-hot to binary converter module
+    onehot_to_binary uut (
+        .onehot_in(onehot_in),
+        .bin_out(bin_out)
+    );
+
+    integer i;
+    reg [3:0] expected_bin;
+
+    initial begin
+        $display("One-Hot to Binary Converter Testbench");
+        $display("Time | One-Hot In         | Bin Out | Expected Bin | Match");
+        $display("---------------------------------------------------------------");
+        for (i = 0; i < 16; i = i + 1) begin
+            onehot_in = 16'b1 << i;
+            expected_bin = i[3:0];
+            #2; // Wait for output to settle
+            $display("%4t | %016b |   %4b   |     %4b     |  %s",
+                $time,
+                onehot_in,
+                bin_out,
+                expected_bin,
+                (bin_out == expected_bin) ? "YES" : "NO"
+            );
+        end
+
+        // Test invalid input: all zeros
+        onehot_in = 16'b0;
+        expected_bin = 4'd0;
+        #2;
+        $display("%4t | %016b |   %4b   |     %4b     |  %s (Invalid Input)",
+            $time,
+            onehot_in,
+            bin_out,
+            expected_bin,
+            (bin_out == expected_bin) ? "YES" : "NO"
+        );
+
+        // Test invalid input: multiple bits set
+        onehot_in = 16'b0000000000001010;
+        expected_bin = 4'd0;
+        #2;
+        $display("%4t | %016b |   %4b   |     %4b     |  %s (Invalid Input)",
+            $time,
+            onehot_in,
+            bin_out,
+            expected_bin,
+            (bin_out == expected_bin) ? "YES" : "NO"
+        );
+
+        $finish;
+    end
+
+endmodule

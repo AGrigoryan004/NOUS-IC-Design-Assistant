@@ -1,0 +1,7 @@
+venv/
+node_modules/
+frontend/nous-frontend/node_modules/
+__pycache__/
+*.pyc
+.env
+index_store/

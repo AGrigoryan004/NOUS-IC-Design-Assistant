@@ -1,0 +1,67 @@
+module tb_pcm;
+
+    // Parameters for test
+    parameter BIT_WIDTH = 8;
+    parameter SAMPLE_RATE_DIV = 4;
+
+    // Testbench signals
+    reg clk;
+    reg rst_n;
+    reg [BIT_WIDTH-1:0] analog_in;
+    wire [BIT_WIDTH-1:0] pcm_out;
+    wire sample_valid;
+
+    // Instantiate the PCM module
+    pcm #(
+        .BIT_WIDTH(BIT_WIDTH),
+        .SAMPLE_RATE_DIV(SAMPLE_RATE_DIV)
+    ) dut (
+        .clk(clk),
+        .rst_n(rst_n),
+        .analog_in(analog_in),
+        .pcm_out(pcm_out),
+        .sample_valid(sample_valid)
+    );
+
+    // Clock generation: 10ns period
+    initial clk = 0;
+    always #5 clk = ~clk;
+
+    // Test stimulus
+    integer i;
+    reg [BIT_WIDTH-1:0] analog_samples [0:15]; // Test vector
+
+    initial begin
+        // Initialize analog_samples with a ramp pattern
+        for (i = 0; i < 16; i = i + 1) begin
+            analog_samples[i] = i * 10;
+        end
+    end
+
+    initial begin
+        // Initialize signals
+        rst_n = 0;
+        analog_in = 0;
+        #20;
+        rst_n = 1;
+
+        // Apply analog samples to the input
+        for (i = 0; i < 16; i = i + 1) begin
+            analog_in = analog_samples[i];
+            // Hold each sample for SAMPLE_RATE_DIV clock cycles
+            repeat (SAMPLE_RATE_DIV) @(posedge clk);
+        end
+
+        // Wait for a few more cycles to observe outputs
+        repeat (10) @(posedge clk);
+
+        $finish;
+    end
+
+    // Monitor outputs
+    initial begin
+        $display("Time\tanalog_in\tpcm_out\tsample_valid");
+        $monitor("%0t\t%0d\t\t%0d\t\t%b", $time, analog_in, pcm_out, sample_valid);
+    end
+
+endmodule

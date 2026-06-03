@@ -1,0 +1,101 @@
+module tb_eeprom;
+
+    // Parameters for test
+    parameter ADDR_WIDTH = 4;   // 16 locations
+    parameter DATA_WIDTH = 8;
+
+    // Testbench signals
+    reg clk;
+    reg rst_n;
+    reg we;
+    reg re;
+    reg [ADDR_WIDTH-1:0] addr;
+    reg [DATA_WIDTH-1:0] din;
+    wire [DATA_WIDTH-1:0] dout;
+    wire ready;
+
+    // Instantiate EEPROM module
+    eeprom #(
+        .ADDR_WIDTH(ADDR_WIDTH),
+        .DATA_WIDTH(DATA_WIDTH)
+    ) dut (
+        .clk(clk),
+        .rst_n(rst_n),
+        .we(we),
+        .re(re),
+        .addr(addr),
+        .din(din),
+        .dout(dout),
+        .ready(ready)
+    );
+
+    // Clock generation: 10ns period
+    initial clk = 0;
+    always #5 clk = ~clk;
+
+    integer i;
+
+    // Test sequence
+    initial begin
+        // Initialize signals
+        rst_n = 0;
+        we    = 0;
+        re    = 0;
+        addr  = 0;
+        din   = 0;
+        #20;
+        rst_n = 1;
+
+        // Write data to EEPROM
+        $display("Writing data to EEPROM...");
+        for (i = 0; i < 8; i = i + 1) begin
+            @(negedge clk);
+            addr = i;
+            din  = i * 11;
+            we   = 1;
+            re   = 0;
+            @(negedge clk);
+            we   = 0;
+        end
+
+        // Read back data from EEPROM
+        $display("Reading data from EEPROM...");
+        for (i = 0; i < 8; i = i + 1) begin
+            @(negedge clk);
+            addr = i;
+            we   = 0;
+            re   = 1;
+            @(negedge clk);
+            re   = 0;
+            // Wait for ready signal
+            wait (ready == 1);
+            $display("Time %0t: Read addr=%0d, dout=%0d (expected %0d)", $time, addr, dout, i*11);
+        end
+
+        // Test reset clears output and ready
+        $display("Testing reset...");
+        @(negedge clk);
+        rst_n = 0;
+        @(negedge clk);
+        rst_n = 1;
+        @(negedge clk);
+        addr = 2;
+        we   = 0;
+        re   = 1;
+        @(negedge clk);
+        re   = 0;
+        wait (ready == 1);
+        $display("After reset: Read addr=%0d, dout=%0d (should be retained if memory is not cleared on reset)", addr, dout);
+
+        $display("Test completed.");
+        #20;
+        $finish;
+    end
+
+    // Monitor signals
+    initial begin
+        $display("Time	clk	rst_n	we	re	addr	din	dout	ready");
+        $monitor("%0t	%b	%b	%b	%b	%0d	%0d	%0d	%b", $time, clk, rst_n, we, re, addr, din, dout, ready);
+    end
+
+endmodule

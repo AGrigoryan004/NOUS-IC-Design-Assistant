@@ -1,0 +1,23 @@
+module priority_encoder #(
+    parameter N = 8,                        // Input width (number of bits)
+    parameter IDX_WIDTH = $clog2(N)         // Output index width
+)(
+    input  wire [N-1:0] in,                 // Input vector, in[N-1] is highest priority
+    output reg  [IDX_WIDTH-1:0] out,        // Binary index of highest-priority '1'
+    output reg                  valid       // High if any input is active
+);
+
+    integer i;
+    always @(*) begin
+        valid = (in != {N{1'b0}});
+        out = {IDX_WIDTH{1'b0}};
+        // Scan from highest to lowest priority
+        for (i = N-1; i >= 0; i = i - 1) begin
+            if (in[i]) begin
+                out = i[IDX_WIDTH-1:0];
+                disable for; // Stop at first (highest) '1'
+            end
+        end
+    end
+
+endmodule

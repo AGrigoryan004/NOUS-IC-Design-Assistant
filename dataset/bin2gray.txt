@@ -1,0 +1,12 @@
+// Parameterized Binary to Gray Code Converter Module
+module bin2gray #(
+    parameter WIDTH = 8 // Default bit-width is 8
+)(
+    input  wire [WIDTH-1:0] bin,
+    output wire [WIDTH-1:0] gray
+);
+
+    // Gray code conversion: MSB is same, rest are XORed with previous bit
+    assign gray = {bin[WIDTH-1], bin[WIDTH-1:1] ^ bin[WIDTH-2:0]};
+
+endmodule

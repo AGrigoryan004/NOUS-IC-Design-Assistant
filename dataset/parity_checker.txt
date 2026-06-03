@@ -1,0 +1,18 @@
+module parity_checker (
+    input  [3:0] data_in,     // 4-bit input data
+    input        parity_bit,  // Parity bit to check
+    input        parity_mode, // 0: even parity, 1: odd parity
+    output       parity_ok    // 1 if parity matches, 0 otherwise
+);
+
+    wire computed_parity;
+
+    // Compute parity based on mode
+    // Even parity: parity = ^data_in (XOR of all bits), then invert for even
+    // Odd parity: parity = ^data_in (XOR of all bits)
+    assign computed_parity = parity_mode ? (^data_in) : ~(^data_in);
+
+    // Parity is OK if computed parity matches the provided parity bit
+    assign parity_ok = (computed_parity == parity_bit);
+
+endmodule

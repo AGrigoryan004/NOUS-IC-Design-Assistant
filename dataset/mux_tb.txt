@@ -1,0 +1,63 @@
+module tb_mux;
+
+    // Task to run a test for given parameters
+    task automatic run_test;
+        input integer N;
+        input integer DATA_WIDTH;
+        integer i, s;
+        reg  [N*DATA_WIDTH-1:0] data_in;
+        reg  [$clog2(N)-1:0]    sel;
+        wire [DATA_WIDTH-1:0]   data_out;
+        reg  [DATA_WIDTH-1:0]   expected;
+        reg  [DATA_WIDTH-1:0]   data_array [0:N-1];
+
+        // Instantiate the mux
+        mux #(
+            .N(N),
+            .DATA_WIDTH(DATA_WIDTH)
+        ) dut (
+            .data_in(data_in),
+            .sel(sel),
+            .data_out(data_out)
+        );
+
+        begin
+            $display("-----------------------------------------------------");
+            $display("Testing MUX with N=%0d, DATA_WIDTH=%0d", N, DATA_WIDTH);
+
+            // Initialize data_in with unique values for each input
+            for (i = 0; i < N; i = i + 1) begin
+                data_array[i] = $random;
+            end
+
+            // Pack data_array into data_in
+            data_in = {data_array[N-1:0]};
+
+            // Test all select values
+            for (s = 0; s < N; s = s + 1) begin
+                sel = s;
+                #1; // Wait for combinational logic to settle
+                expected = data_array[s];
+                if (data_out !== expected) begin
+                    $display("ERROR: sel=%0d, expected=0x%0h, got=0x%0h", s, expected, data_out);
+                end else begin
+                    $display("PASS : sel=%0d, data_out=0x%0h", s, data_out);
+                end
+            end
+            $display("-----------------------------------------------------
+");
+        end
+    endtask
+
+    initial begin
+        // Test with different parameter values
+        run_test(2, 4);    // 2-to-1 mux, 4-bit data
+        run_test(4, 8);    // 4-to-1 mux, 8-bit data
+        run_test(8, 16);   // 8-to-1 mux, 16-bit data
+        run_test(16, 1);   // 16-to-1 mux, 1-bit data
+
+        $display("All tests completed.");
+        $finish;
+    end
+
+endmodule

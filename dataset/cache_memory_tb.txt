@@ -1,0 +1,154 @@
+module tb_cache_mem;
+
+    // Parameters for test
+    parameter ADDR_WIDTH = 8;
+    parameter DATA_WIDTH = 8;
+    parameter NUM_LINES  = 4;
+    parameter NUM_WAYS   = 2;
+
+    // Testbench signals
+    reg clk;
+    reg rst_n;
+    reg we;
+    reg re;
+    reg inv;
+    reg [ADDR_WIDTH-1:0] addr;
+    reg [DATA_WIDTH-1:0] din;
+    wire [DATA_WIDTH-1:0] dout;
+    wire hit;
+    wire ready;
+
+    // Instantiate cache memory module
+    cache_mem #(
+        .ADDR_WIDTH(ADDR_WIDTH),
+        .DATA_WIDTH(DATA_WIDTH),
+        .NUM_LINES(NUM_LINES),
+        .NUM_WAYS(NUM_WAYS)
+    ) dut (
+        .clk(clk),
+        .rst_n(rst_n),
+        .we(we),
+        .re(re),
+        .inv(inv),
+        .addr(addr),
+        .din(din),
+        .dout(dout),
+        .hit(hit),
+        .ready(ready)
+    );
+
+    // Clock generation: 10ns period
+    initial clk = 0;
+    always #5 clk = ~clk;
+
+    integer i, j;
+
+    // Test sequence
+    initial begin
+        // Initialize signals
+        rst_n = 0;
+        we    = 0;
+        re    = 0;
+        inv   = 0;
+        addr  = 0;
+        din   = 0;
+        #20;
+        rst_n = 1;
+
+        // Write unique data to each cache line/way
+        $display("Writing data to cache...");
+        for (i = 0; i < NUM_LINES; i = i + 1) begin
+            for (j = 0; j < NUM_WAYS; j = j + 1) begin
+                @(negedge clk);
+                addr = {i+j, i}; // tag = i+j, line_idx = i
+                din  = (i*10) + j;
+                we   = 1;
+                re   = 0;
+                inv  = 0;
+                @(negedge clk);
+                we   = 0;
+                wait (ready == 1);
+                $display("Write: addr=%0d (tag=%0d, idx=%0d), din=%0d, hit=%b", addr, addr[ADDR_WIDTH-1:ADDR_WIDTH-$clog2(NUM_LINES)], addr[$clog2(NUM_LINES)-1:0], din, hit);
+            end
+        end
+
+        // Read back and check for hits
+        $display("Reading data from cache (should be hits)...");
+        for (i = 0; i < NUM_LINES; i = i + 1) begin
+            for (j = 0; j < NUM_WAYS; j = j + 1) begin
+                @(negedge clk);
+                addr = {i+j, i};
+                we   = 0;
+                re   = 1;
+                inv  = 0;
+                @(negedge clk);
+                re   = 0;
+                wait (ready == 1);
+                $display("Read: addr=%0d (tag=%0d, idx=%0d), dout=%0d, hit=%b (expected hit)", addr, addr[ADDR_WIDTH-1:ADDR_WIDTH-$clog2(NUM_LINES)], addr[$clog2(NUM_LINES)-1:0], dout, hit);
+            end
+        end
+
+        // Read from a non-cached address (should be miss)
+        $display("Reading from non-cached address (should be miss)...");
+        @(negedge clk);
+        addr = {8'hFF, 2'b00}; // tag unlikely to match
+        we   = 0;
+        re   = 1;
+        inv  = 0;
+        @(negedge clk);
+        re   = 0;
+        wait (ready == 1);
+        $display("Read: addr=%0d, dout=%0d, hit=%b (expected miss)", addr, dout, hit);
+
+        // Invalidate a cache line and check
+        $display("Invalidating line 1...");
+        @(negedge clk);
+        addr = {2'b00, 1}; // line_idx = 1
+        inv  = 1;
+        we   = 0;
+        re   = 0;
+        @(negedge clk);
+        inv  = 0;
+
+        // Try reading from invalidated line (should be miss)
+        @(negedge clk);
+        addr = {1, 1};
+        we   = 0;
+        re   = 1;
+        inv  = 0;
+        @(negedge clk);
+        re   = 0;
+        wait (ready == 1);
+        $display("Read after invalidate: addr=%0d, dout=%0d, hit=%b (expected miss)", addr, dout, hit);
+
+        // Test reset clears cache
+        $display("Testing reset...");
+        @(negedge clk);
+        rst_n = 0;
+        @(negedge clk);
+        rst_n = 1;
+        @(negedge clk);
+
+        // Try reading after reset (should be miss)
+        @(negedge clk);
+        addr = {0, 0};
+        we   = 0;
+        re   = 1;
+        inv  = 0;
+        @(negedge clk);
+        re   = 0;
+        wait (ready == 1);
+        $display("Read after reset: addr=%0d, dout=%0d, hit=%b (expected miss)", addr, dout, hit);
+
+        $display("Test completed.");
+        #20;
+        $finish;
+    end
+
+    // Monitor signals
+    initial begin
+        $display("Time	clk	rst_n	we	re	inv	addr	din	dout	hit	ready");
+        $monitor("%0t	%b	%b	%b	%b	%b	%0d	%0d	%0d	%b	%b", $time, clk, rst_n, we, re, inv, addr, din, dout, hit, ready);
+    end
+
+endmodule

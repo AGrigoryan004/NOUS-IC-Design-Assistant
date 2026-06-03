@@ -1,0 +1,100 @@
+module bin2bcd_tb;
+
+    parameter BIN_WIDTH = 8;
+    parameter BCD_DIGITS = (BIN_WIDTH*30103)/100000 + 1;
+
+    reg  [BIN_WIDTH-1:0] bin;
+    wire [4*BCD_DIGITS-1:0] bcd;
+
+    integer i;
+
+    // Instantiate the converter
+    bin2bcd #(
+        .BIN_WIDTH(BIN_WIDTH),
+        .BCD_DIGITS(BCD_DIGITS)
+    ) uut (
+        .bin(bin),
+        .bcd(bcd)
+    );
+
+    // Task to display BCD digits
+    task display_bcd;
+        integer k;
+        begin
+            $write("BCD = ");
+            for (k = BCD_DIGITS-1; k >= 0; k = k - 1) begin
+                $write("%0d", bcd[4*k +: 4]);
+            end
+        end
+    endtask
+
+    // Task to display results
+    task display_result;
+        begin
+            $write("Time=%0t | bin=%0d (0b%b) | ", $time, bin, bin);
+            display_bcd();
+            $write("
+");
+        end
+    endtask
+
+    initial begin
+        $display("==== Binary to BCD Converter Testbench ====");
+
+        // Test case 1: All zeros
+        bin = 8'b00000000;
+        #10; display_result();
+
+        // Test case 2: All ones (255)
+        bin = 8'b11111111;
+        #10; display_result();
+
+        // Test case 3: 1
+        bin = 8'b00000001;
+        #10; display_result();
+
+        // Test case 4: 9
+        bin = 8'b00001001;
+        #10; display_result();
+
+        // Test case 5: 10
+        bin = 8'b00001010;
+        #10; display_result();
+
+        // Test case 6: 99
+        bin = 8'b01100011;
+        #10; display_result();
+
+        // Test case 7: 100
+        bin = 8'b01100100;
+        #10; display_result();
+
+        // Test case 8: 128
+        bin = 8'b10000000;
+        #10; display_result();
+
+        // Test case 9: 200
+        bin = 8'b11001000;
+        #10; display_result();
+
+        // Test case 10: Random value (57)
+        bin = 8'b00111001;
+        #10; display_result();
+
+        // Test case 11: Random value (123)
+        bin = 8'b01111011;
+        #10; display_result();
+
+        // Test case 12: Random value (170)
+        bin = 8'b10101010;
+        #10; display_result();
+
+        // Test case 13: Random value (85)
+        bin = 8'b01010101;
+        #10; display_result();
+
+        $display("Testbench completed.");
+        $finish;
+    end
+
+endmodule

@@ -1,0 +1,38 @@
+
+module tb_parity_generator;
+
+    reg  [3:0] data_in;
+    wire       even_parity;
+    wire       odd_parity;
+
+    // Instantiate the parity generator module
+    parity_generator uut (
+        .data_in(data_in),
+        .even_parity(even_parity),
+        .odd_parity(odd_parity)
+    );
+
+    integer i;
+    reg [2:0] ones_count;
+    reg expected_even, expected_odd;
+
+    initial begin
+        $display("Time | Data In | Even Parity | Odd Parity | # of 1's | Exp Even | Exp Odd");
+        $display("-----------------------------------------------------------------------");
+        for (i = 0; i < 16; i = i + 1) begin
+            data_in = i[3:0];
+            #2; // Wait for output to settle
+
+            // Count number of 1's in data_in
+            ones_count = data_in[0] + data_in[1] + data_in[2] + data_in[3];
+            expected_even = (ones_count % 2 == 0) ? 1'b1 : 1'b0;
+            expected_odd  = (ones_count % 2 == 1) ? 1'b1 : 1'b0;
+
+            $display("%4t |   %b   |      %b      |     %b     |    %0d    |    %b     |   %b",
+                $time, data_in, even_parity, odd_parity, ones_count, expected_even, expected_odd);
+        end
+        $finish;
+    end
+
+endmodule
+//------------------------------------------------------------------------------

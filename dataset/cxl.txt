@@ -1,0 +1,60 @@
+module cxl_interface #(
+    parameter DATA_WIDTH = 64,      // Width of data bus
+    parameter ADDR_WIDTH = 32       // Width of address bus
+)(
+    input  wire                   clk,         // Clock
+    input  wire                   rst_n,       // Active-low reset
+
+    // Host to Device signals
+    input  wire                   host_valid,  // Host initiates transaction
+    input  wire [ADDR_WIDTH-1:0]  host_addr,   // Address from host
+    input  wire [DATA_WIDTH-1:0]  host_wdata,  // Write data from host
+    input  wire                   host_write,  // Write enable
+    output wire                   host_ready,  // Device ready to accept
+
+    // Device to Host signals
+    output reg                    dev_valid,   // Device response valid
+    output reg  [DATA_WIDTH-1:0]  dev_rdata,   // Read data to host
+    input  wire                   dev_ready    // Host ready to accept response
+);
+
+    // Simple memory for demonstration
+    reg [DATA_WIDTH-1:0] mem [0:(1<<ADDR_WIDTH)-1];
+
+    // Ready/valid handshake logic
+    reg busy;
+
+    assign host_ready = !busy;
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            busy      <= 1'b0;
+            dev_valid <= 1'b0;
+            dev_rdata <= {DATA_WIDTH{1'b0}};
+        end else begin
+            // Default: clear dev_valid unless held for handshake
+            if (dev_valid && dev_ready)
+                dev_valid <= 1'b0;
+
+            // Accept host transaction if not busy
+            if (host_valid && host_ready) begin
+                busy <= 1'b1;
+                if (host_write) begin
+                    // Write operation
+                    mem[host_addr] <= host_wdata;
+                    dev_valid      <= 1'b1;
+                    dev_rdata      <= {DATA_WIDTH{1'b0}}; // No read data on write
+                end else begin
+                    // Read operation
+                    dev_valid <= 1'b1;
+                    dev_rdata <= mem[host_addr];
+                end
+            end else if (dev_valid && dev_ready) begin
+                // Transaction complete
+                busy <= 1'b0;
+            end
+        end
+    end
+
+endmodule
+

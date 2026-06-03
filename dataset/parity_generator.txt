@@ -1,0 +1,13 @@
+module parity_generator (
+    input  [3:0] data_in,      // 4-bit input data
+    output       even_parity,  // Even parity bit
+    output       odd_parity    // Odd parity bit
+);
+
+    // Even parity: 1 if number of 1's in data_in is even, else 0
+    assign even_parity = ~(^data_in);
+
+    // Odd parity: 1 if number of 1's in data_in is odd, else 0
+    assign odd_parity =  (^data_in);
+
+endmodule

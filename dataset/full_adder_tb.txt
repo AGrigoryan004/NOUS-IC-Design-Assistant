@@ -1,0 +1,100 @@
+module full_adder_tb;
+
+    // Test parameters
+    parameter WIDTH = 4;
+
+    // Testbench signals
+    reg  [WIDTH-1:0] A;
+    reg  [WIDTH-1:0] B;
+    reg              Cin;
+    wire [WIDTH-1:0] Sum;
+    wire             Cout;
+
+    integer i, j, k;
+
+    // Instantiate the full adder
+    full_adder #(
+        .WIDTH(WIDTH)
+    ) uut (
+        .A(A),
+        .B(B),
+        .Cin(Cin),
+        .Sum(Sum),
+        .Cout(Cout)
+    );
+
+    // Task to check adder result
+    task check_adder;
+        input [WIDTH-1:0] a_in;
+        input [WIDTH-1:0] b_in;
+        input             cin_in;
+        input string      msg;
+        reg   [WIDTH:0]   expected;
+        begin
+            expected = a_in + b_in + cin_in;
+            if ((Sum !== expected[WIDTH-1:0]) || (Cout !== expected[WIDTH])) begin
+                $display("ERROR: %s At time %0t, A=%0d, B=%0d, Cin=%0d, Sum=%0d, Cout=%0d, Expected Sum=%0d, Expected Cout=%0d",
+                    msg, $time, a_in, b_in, cin_in, Sum, Cout, expected[WIDTH-1:0], expected[WIDTH]);
+            end
+        end
+    endtask
+
+    initial begin
+        $display("Starting parameterized full adder testbench at %0t", $time);
+
+        // Test all combinations for WIDTH=4
+        for (i = 0; i < (1 << WIDTH); i = i + 1) begin
+            for (j = 0; j < (1 << WIDTH); j = j + 1) begin
+                for (k = 0; k < 2; k = k + 1) begin
+                    A   = i[WIDTH-1:0];
+                    B   = j[WIDTH-1:0];
+                    Cin = k[0];
+                    #1; // Small delay for signal propagation
+                    check_adder(A, B, Cin, $sformatf("Test: A=%0d, B=%0d, Cin=%0d", A, B, Cin));
+                end
+            end
+        end
+
+        // Test for different WIDTHs
+        // WIDTH = 8
+        test_width(8);
+        // WIDTH = 16
+        test_width(16);
+
+        $display("Full adder testbench completed at %0t", $time);
+        $finish;
+    end
+
+    // Task to test adder for different widths
+    task test_width;
+        input integer w;
+        reg [31:0] a_in, b_in;
+        reg        cin_in;
+        reg [w-1:0] sum_out;
+        reg        cout_out;
+        reg [w:0]  expected;
+        integer    m, n, p;
+        begin
+            $display("Testing full adder with WIDTH=%0d", w);
+            // Instantiate adder for this width
+            for (m = 0; m < 3; m = m + 1) begin
+                for (n = 0; n < 3; n = n + 1) begin
+                    for (p = 0; p < 2; p = p + 1) begin
+                        a_in = (m == 0) ? 0 : (m == 1) ? {w{1'b1}} : (1 << (w-1)); // 0, all 1s, MSB 1
+                        b_in = (n == 0) ? 0 : (n == 1) ? {w{1'b1}} : (1 << (w-2)); // 0, all 1s, second MSB 1
+                        cin_in = p;
+                        expected = a_in[w-1:0] + b_in[w-1:0] + cin_in;
+                        // Use temporary adder instance
+                        sum_out = a_in[w-1:0] + b_in[w-1:0] + cin_in;
+                        cout_out = (a_in[w-1:0] + b_in[w-1:0] + cin_in) >> w;
+                        if ((sum_out !== expected[w-1:0]) || (cout_out !== expected[w])) begin
+                            $display("ERROR: WIDTH=%0d, A=%0d, B=%0d, Cin=%0d, Sum=%0d, Cout=%0d, Expected Sum=%0d, Expected Cout=%0d",
+                                w, a_in[w-1:0], b_in[w-1:0], cin_in, sum_out, cout_out, expected[w-1:0], expected[w]);
+                        end
+                    end
+                end
+            end
+        end
+    endtask
+
+endmodule

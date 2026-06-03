@@ -1,0 +1,35 @@
+module prom #(
+    parameter DATA_WIDTH = 8,   // Width of each data word
+    parameter DEPTH = 16        // Number of entries in the PROM
+)(
+    input  wire [$clog2(DEPTH)-1:0] addr,      // Read address
+    output reg  [DATA_WIDTH-1:0]    data_out   // Data output
+);
+
+    // Internal memory array
+    reg [DATA_WIDTH-1:0] mem [0:DEPTH-1];
+
+    // PROM initialization (example data)
+    initial begin
+        integer i;
+        for (i = 0; i < DEPTH; i = i + 1)
+            mem[i] = {DATA_WIDTH{1'b0}}; // Default to zero
+
+        // Example: Initialize first few locations with specific values
+        mem[0] = 8'hA5;
+        mem[1] = 8'h3C;
+        mem[2] = 8'h7E;
+        mem[3] = 8'hFF;
+        mem[4] = 8'h12;
+        mem[5] = 8'h34;
+        mem[6] = 8'h56;
+        mem[7] = 8'h78;
+        // Remaining locations are zero
+    end
+
+    // Read operation (combinational)
+    always @(*) begin
+        data_out = mem[addr];
+    end
+
+endmodule

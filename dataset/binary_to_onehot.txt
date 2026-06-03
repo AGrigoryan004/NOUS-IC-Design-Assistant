@@ -1,0 +1,9 @@
+module binary_to_onehot (
+    input  [3:0] bin_in,      // 4-bit binary input
+    output [15:0] onehot_out  // 16-bit one-hot output
+);
+
+    // Set only the bit at position bin_in to 1, others to 0
+    assign onehot_out = 16'b1 << bin_in;
+
+endmodule

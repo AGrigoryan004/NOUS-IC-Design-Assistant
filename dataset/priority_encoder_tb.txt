@@ -1,0 +1,92 @@
+module tb_priority_encoder;
+
+    // Task to run tests for a given width
+    task run_tests;
+        input integer N;
+        integer IDX_WIDTH;
+        reg  [N-1:0] in;
+        wire [N-1:0] in_wire;
+        wire [$clog2(N)-1:0] out;
+        wire                  valid;
+
+        // Dynamically instantiate the DUT
+        priority_encoder #(
+            .N(N),
+            .IDX_WIDTH($clog2(N))
+        ) dut (
+            .in(in_wire),
+            .out(out),
+            .valid(valid)
+        );
+
+        assign in_wire = in;
+
+        integer i;
+
+        begin
+            IDX_WIDTH = $clog2(N);
+            $display("==== Priority Encoder Test: N = %0d ====", N);
+
+            // Test all single-bit cases (one-hot)
+            for (i = 0; i < N; i = i + 1) begin
+                in = {N{1'b0}};
+                in[i] = 1'b1;
+                #1 $display("Input: %0s | Valid: %b | Output (index): %0d", in2str(in, N), valid, out);
+            end
+
+            // Test all bits zero
+            in = {N{1'b0}};
+            #1 $display("Input: %0s | Valid: %b | Output (index): %0d", in2str(in, N), valid, out);
+
+            // Test multiple bits set (should pick highest)
+            if (N >= 4) begin
+                in = {N{1'b0}};
+                in[N-1] = 1'b1; in[1] = 1'b1; in[N/2] = 1'b1;
+                #1 $display("Input: %0s | Valid: %b | Output (index): %0d", in2str(in, N), valid, out);
+
+                in = {N{1'b0}};
+                in[N/2] = 1'b1; in[N/2-1] = 1'b1; in[1] = 1'b1;
+                #1 $display("Input: %0s | Valid: %b | Output (index): %0d", in2str(in, N), valid, out);
+
+                in = {N{1'b0}};
+                in[1] = 1'b1; in[0] = 1'b1;
+                #1 $display("Input: %0s | Valid: %b | Output (index): %0d", in2str(in, N), valid, out);
+
+                in = {N{1'b0}};
+                in[N-2] = 1'b1;
+                #1 $display("Input: %0s | Valid: %b | Output (index): %0d", in2str(in, N), valid, out);
+
+                in = {N{1'b0}};
+                in[0] = 1'b1;
+                #1 $display("Input: %0s | Valid: %b | Output (index): %0d", in2str(in, N), valid, out);
+            end
+
+            $display("==== Test Completed for N = %0d ====
+", N);
+        end
+    endtask
+
+    // Function to convert input vector to string for display
+    function [255:0] in2str;
+        input [255:0] vec;
+        input integer N;
+        integer j;
+        reg [8*32-1:0] str;
+        begin
+            str = "";
+            for (j = N-1; j >= 0; j = j - 1) begin
+                str = {str, (vec[j] ? "1" : "0")};
+            end
+            in2str = str;
+        end
+    endfunction
+
+    initial begin
+        // Test for N = 4, 8, 16
+        run_tests(4);
+        run_tests(8);
+        run_tests(16);
+        $finish;
+    end
+
+endmodule

@@ -1,0 +1,56 @@
+module tb_parity_checker;
+
+    reg  [3:0] data_in;
+    reg        parity_bit;
+    reg        parity_mode; // 0: even, 1: odd
+    wire       parity_ok;
+
+    // Instantiate the parity checker module
+    parity_checker uut (
+        .data_in(data_in),
+        .parity_bit(parity_bit),
+        .parity_mode(parity_mode),
+        .parity_ok(parity_ok)
+    );
+
+    integer i, p, mode;
+    reg [2:0] ones_count;
+    reg expected_parity, expected_ok;
+
+    initial begin
+        $display("Parity Checker Testbench");
+        $display("Time | Mode | Data In | Parity Bit | # of 1's | Exp Parity | Parity OK | Expected OK");
+        $display("-------------------------------------------------------------------------------");
+        for (mode = 0; mode <= 1; mode = mode + 1) begin
+            parity_mode = mode;
+            for (i = 0; i < 16; i = i + 1) begin
+                data_in = i[3:0];
+                // Count number of 1's in data_in
+                ones_count = data_in[0] + data_in[1] + data_in[2] + data_in[3];
+                // Compute expected parity bit for this mode
+                if (parity_mode == 0)
+                    expected_parity = ~(^data_in); // Even parity
+                else
+                    expected_parity = (^data_in);  // Odd parity
+                for (p = 0; p <= 1; p = p + 1) begin
+                    parity_bit = p;
+                    // Parity is OK if parity_bit matches expected parity
+                    expected_ok = (parity_bit == expected_parity);
+                    #2; // Wait for output to settle
+                    $display("%4t |  %s  |   %b   |     %b     |    %0d    |     %b     |     %b    |     %b",
+                        $time,
+                        (parity_mode ? "Odd " : "Even"),
+                        data_in,
+                        parity_bit,
+                        ones_count,
+                        expected_parity,
+                        parity_ok,
+                        expected_ok
+                    );
+                end
+            end
+        end
+        $finish;
+    end
+
+endmodule

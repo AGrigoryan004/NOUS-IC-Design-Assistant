@@ -1,0 +1,43 @@
+module tb_binary_to_7segment;
+
+    reg  [3:0] bin_in;
+    wire [6:0] seg_out;
+
+    // Instantiate the DUT
+    binary_to_7segment dut (
+        .bin_in(bin_in),
+        .seg_out(seg_out)
+    );
+
+    // Task to display the results
+    task display_result;
+        input [3:0] bin;
+        input [6:0] seg;
+        integer i;
+        begin
+            $write("Binary Input: %0d (0x%0h) | 7-Segment Output: ", bin, bin);
+            for (i = 6; i >= 0; i = i - 1)
+                $write("%b", seg[i]);
+            $write(" | Segments: ");
+            // Display which segments are ON (a-g)
+            if (seg[6]) $write("a");
+            if (seg[5]) $write("b");
+            if (seg[4]) $write("c");
+            if (seg[3]) $write("d");
+            if (seg[2]) $write("e");
+            if (seg[1]) $write("f");
+            if (seg[0]) $write("g");
+            $display("");
+        end
+    endtask
+
+    initial begin
+        $display("==== Binary to 7-Segment Converter Testbench ====");
+        for (bin_in = 0; bin_in < 16; bin_in = bin_in + 1) begin
+            #1 display_result(bin_in, seg_out);
+        end
+        $display("==== Testbench Completed ====");
+        $finish;
+    end
+
+endmodule

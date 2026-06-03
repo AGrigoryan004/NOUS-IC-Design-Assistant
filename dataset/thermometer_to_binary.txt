@@ -1,0 +1,21 @@
+module thermometer_to_binary #(
+    parameter WIDTH = 8 // Number of thermometer bits
+)(
+    input  wire [WIDTH-1:0] thermometer_in, // Thermometer code input
+    output reg  [$clog2(WIDTH):0] binary_out // Binary output (can represent 0 to WIDTH)
+);
+
+    integer i;
+    always @(*) begin
+        binary_out = 0;
+        // Count the number of consecutive '1's from MSB to LSB
+        for (i = WIDTH-1; i >= 0; i = i - 1) begin
+            if (thermometer_in[i] == 1'b1)
+                binary_out = binary_out + 1;
+            else
+                // Stop counting at the first '0'
+                break;
+        end
+    end
+
+endmodule

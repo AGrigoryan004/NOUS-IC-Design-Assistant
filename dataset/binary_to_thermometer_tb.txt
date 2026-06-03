@@ -1,0 +1,34 @@
+module tb_binary_to_thermometer;
+
+    reg  [3:0] bin_in;
+    wire [15:0] thermo_out;
+
+    // Instantiate the binary to thermometer code converter module
+    binary_to_thermometer uut (
+        .bin_in(bin_in),
+        .thermo_out(thermo_out)
+    );
+
+    integer i;
+    reg [15:0] expected_thermo;
+
+    initial begin
+        $display("Binary to Thermometer Code Converter Testbench");
+        $display("Time | Bin In | Thermometer Out     | Expected Thermo      | Match");
+        $display("--------------------------------------------------------------------------");
+        for (i = 0; i < 16; i = i + 1) begin
+            bin_in = i[3:0];
+            expected_thermo = (16'h1 << (bin_in + 1)) - 1;
+            #2; // Wait for output to settle
+            $display("%4t |  %4b  | %016b | %016b |   %s",
+                $time,
+                bin_in,
+                thermo_out,
+                expected_thermo,
+                (thermo_out == expected_thermo) ? "YES" : "NO"
+            );
+        end
+        $finish;
+    end
+
+endmodule

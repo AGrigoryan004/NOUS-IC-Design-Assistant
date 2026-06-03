@@ -1,0 +1,17 @@
+module demux #(
+    parameter integer DATA_WIDTH = 8,      // Width of the data input
+    parameter integer NUM_OUTPUTS = 4      // Number of outputs (must be power of 2)
+)(
+    input  wire [DATA_WIDTH-1:0] data_in,  // Data input
+    input  wire [$clog2(NUM_OUTPUTS)-1:0] sel, // Select input
+    output wire [DATA_WIDTH-1:0] data_out [NUM_OUTPUTS-1:0] // Demuxed outputs
+);
+
+    genvar i;
+    generate
+        for (i = 0; i < NUM_OUTPUTS; i = i + 1) begin : demux_outputs
+            assign data_out[i] = (sel == i) ? data_in : {DATA_WIDTH{1'b0}};
+        end
+    endgenerate
+
+endmodule

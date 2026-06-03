@@ -1,0 +1,103 @@
+module cam_tb;
+
+    parameter DATA_WIDTH = 8;
+    parameter DEPTH = 8;
+
+    reg clk;
+    reg rst_n;
+    reg wr_en;
+    reg [$clog2(DEPTH)-1:0] wr_addr;
+    reg [DATA_WIDTH-1:0] wr_data;
+    reg search_en;
+    reg [DATA_WIDTH-1:0] search_data;
+    wire match;
+    wire [$clog2(DEPTH)-1:0] match_addr;
+
+    // Instantiate the CAM
+    cam #(
+        .DATA_WIDTH(DATA_WIDTH),
+        .DEPTH(DEPTH)
+    ) dut (
+        .clk(clk),
+        .rst_n(rst_n),
+        .wr_en(wr_en),
+        .wr_addr(wr_addr),
+        .wr_data(wr_data),
+        .search_en(search_en),
+        .search_data(search_data),
+        .match(match),
+        .match_addr(match_addr)
+    );
+
+    // Clock generation
+    initial begin
+        clk = 0;
+        forever #5 clk = ~clk;
+    end
+
+    // Test sequence
+    initial begin
+        // Initialize signals
+        rst_n = 0;
+        wr_en = 0;
+        wr_addr = 0;
+        wr_data = 0;
+        search_en = 0;
+        search_data = 0;
+
+        // Reset the CAM
+        #12;
+        rst_n = 1;
+
+        // Write data to CAM
+        @(negedge clk);
+        wr_en = 1;
+        wr_addr = 0;
+        wr_data = 8'hA5;
+        @(negedge clk);
+        wr_addr = 1;
+        wr_data = 8'h3C;
+        @(negedge clk);
+        wr_addr = 2;
+        wr_data = 8'h7E;
+        @(negedge clk);
+        wr_addr = 3;
+        wr_data = 8'hFF;
+        @(negedge clk);
+        wr_en = 0;
+
+        // Search for existing data (should find)
+        @(negedge clk);
+        search_en = 1;
+        search_data = 8'h3C;
+        #1;
+        $display("Search for 0x3C: match=%b, match_addr=%0d", match, match_addr);
+
+        // Search for another existing data (should find)
+        @(negedge clk);
+        search_data = 8'hFF;
+        #1;
+        $display("Search for 0xFF: match=%b, match_addr=%0d", match, match_addr);
+
+        // Search for non-existing data (should not find)
+        @(negedge clk);
+        search_data = 8'h12;
+        #1;
+        $display("Search for 0x12: match=%b, match_addr=%0d", match, match_addr);
+
+        // Search for another existing data (should find)
+        @(negedge clk);
+        search_data = 8'hA5;
+        #1;
+        $display("Search for 0xA5: match=%b, match_addr=%0d", match, match_addr);
+
+        // Disable search
+        @(negedge clk);
+        search_en = 0;
+
+        // End simulation
+        #20;
+        $finish;
+    end
+
+endmodule

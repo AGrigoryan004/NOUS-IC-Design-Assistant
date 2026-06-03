@@ -1,0 +1,122 @@
+module hbm_ctrl #
+(
+    parameter ADDR_WIDTH   = 8,   // Address bus width
+    parameter DATA_WIDTH   = 32,  // Data bus width
+    parameter BURST_LEN    = 4,   // Burst length (number of beats per burst)
+    parameter NUM_CHANNELS = 2    // Number of HBM channels
+)
+(
+    input  wire                         clk,         // System clock
+    input  wire                         rst_n,       // Active-low reset
+
+    // Command interface
+    input  wire                         wr_en,       // Write enable (start burst write)
+    input  wire                         rd_en,       // Read enable (start burst read)
+    input  wire [$clog2(NUM_CHANNELS)-1:0] ch_sel,    // Channel select
+    input  wire [ADDR_WIDTH-1:0]        addr,        // Start address (word address)
+    input  wire [DATA_WIDTH-1:0]        wr_data,     // Write data (per beat)
+    output reg  [DATA_WIDTH-1:0]        rd_data,     // Read data (per beat)
+    output reg                          ready,       // Ready for new command
+    output reg                          valid        // Read data valid
+);
+
+    // Internal HBM memory arrays (one per channel)
+    reg [DATA_WIDTH-1:0] mem [0:NUM_CHANNELS-1][0:(1<<ADDR_WIDTH)-1];
+
+    // FSM states
+    typedef enum logic [1:0] {
+        IDLE,
+        WRITE_BURST,
+        READ_BURST
+    } state_t;
+
+    state_t state, state_next;
+
+    // Burst counters and address registers
+    reg [$clog2(BURST_LEN):0] burst_cnt;
+    reg [ADDR_WIDTH-1:0]      burst_addr;
+    reg [$clog2(NUM_CHANNELS)-1:0] burst_ch;
+    reg [DATA_WIDTH-1:0]      wr_data_reg;
+
+    integer i, ch;
+
+    // FSM sequential logic
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            state      <= IDLE;
+            burst_cnt  <= 0;
+            burst_addr <= 0;
+            burst_ch   <= 0;
+            rd_data    <= {DATA_WIDTH{1'b0}};
+            ready      <= 1'b1;
+            valid      <= 1'b0;
+            wr_data_reg<= {DATA_WIDTH{1'b0}};
+            // Clear all memory
+            for (ch = 0; ch < NUM_CHANNELS; ch = ch + 1)
+                for (i = 0; i < (1<<ADDR_WIDTH); i = i + 1)
+                    mem[ch][i] <= {DATA_WIDTH{1'b0}};
+        end else begin
+            state <= state_next;
+            // Default outputs
+            ready <= (state_next == IDLE);
+            valid <= 1'b0;
+
+            case (state)
+                IDLE: begin
+                    if (wr_en) begin
+                        burst_cnt  <= 0;
+                        burst_addr <= addr;
+                        burst_ch   <= ch_sel;
+                        wr_data_reg<= wr_data;
+                    end else if (rd_en) begin
+                        burst_cnt  <= 0;
+                        burst_addr <= addr;
+                        burst_ch   <= ch_sel;
+                    end
+                end
+
+                WRITE_BURST: begin
+                    // Write data to memory
+                    mem[burst_ch][burst_addr] <= wr_data_reg;
+                    burst_cnt  <= burst_cnt + 1;
+                    burst_addr <= burst_addr + 1;
+                    wr_data_reg<= wr_data; // Latch next data
+                end
+
+                READ_BURST: begin
+                    // Read data from memory
+                    rd_data <= mem[burst_ch][burst_addr];
+                    valid   <= 1'b1;
+                    burst_cnt  <= burst_cnt + 1;
+                    burst_addr <= burst_addr + 1;
+                end
+            endcase
+        end
+    end
+
+    // FSM combinational logic
+    always @* begin
+        state_next = state;
+        case (state)
+            IDLE: begin
+                if (wr_en)
+                    state_next = WRITE_BURST;
+                else if (rd_en)
+                    state_next = READ_BURST;
+            end
+            WRITE_BURST: begin
+                if (burst_cnt == BURST_LEN-1)
+                    state_next = IDLE;
+                else
+                    state_next = WRITE_BURST;
+            end
+            READ_BURST: begin
+                if (burst_cnt == BURST_LEN-1)
+                    state_next = IDLE;
+                else
+                    state_next = READ_BURST;
+            end
+        endcase
+    end
+
+endmodule

@@ -1,0 +1,10 @@
+module tb_excess3_to_bin;
+
+    reg  [3:0] excess3_in;
+    wire [3:0] bin_out;
+
+    // Instantiate the converter module
+    excess3_to_bin uut (
+        .excess3_in(excess3_in),
+        .bin_out(bin_out)
+    );

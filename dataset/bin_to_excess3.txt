@@ -1,0 +1,9 @@
+module bin_to_excess3 (
+    input  [3:0] bin_in,      // 4-bit binary input
+    output [3:0] excess3_out  // 4-bit Excess-3 output
+);
+
+    // Excess-3 code is simply binary + 3
+    assign excess3_out = bin_in + 4'd3;
+
+endmodule

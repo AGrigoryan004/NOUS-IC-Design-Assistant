@@ -1,0 +1,24 @@
+// Parameterized Gray Code to Binary Converter Module
+module gray2bin #(
+    parameter WIDTH = 8 // Default bit-width is 8
+)(
+    input  wire [WIDTH-1:0] gray,
+    output wire [WIDTH-1:0] bin
+);
+
+    // Gray to binary conversion: bin[WIDTH-1] = gray[WIDTH-1]
+    // bin[i] = bin[i+1] ^ gray[i] for i = WIDTH-2 downto 0
+    genvar i;
+    wire [WIDTH-1:0] temp_bin;
+
+    assign temp_bin[WIDTH-1] = gray[WIDTH-1];
+
+    generate
+        for (i = WIDTH-2; i >= 0; i = i - 1) begin : gen_gray2bin
+            assign temp_bin[i] = temp_bin[i+1] ^ gray[i];
+        end
+    endgenerate
+
+    assign bin = temp_bin;
+
+endmodule

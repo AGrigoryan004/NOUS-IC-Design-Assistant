@@ -1,0 +1,22 @@
+module decoder_n_tb;
+    parameter N = 8;
+    reg  [$clog2(N)-1:0] a;
+    wire [N-1:0]         y;
+
+    decoder_n #(N) uut (
+        .a(a),
+        .y(y)
+    );
+
+    integer i;
+    initial begin
+        $display("Input a | Output y");
+        $display("-------------------");
+        for (i = 0; i < N; i = i + 1) begin
+            a = i[$clog2(N)-1:0];
+            #10;
+            $display("%0*b     | %0*b", $clog2(N), a, N, y);
+        end
+        $finish;
+    end
+endmodule

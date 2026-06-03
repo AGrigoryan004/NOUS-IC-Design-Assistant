@@ -1,0 +1,121 @@
+module tb_flash_memory;
+
+    parameter ADDR_WIDTH = 4;
+    parameter DATA_WIDTH = 8;
+
+    reg clk;
+    reg rst_n;
+    reg [ADDR_WIDTH-1:0] addr;
+    reg [DATA_WIDTH-1:0] din;
+    wire [DATA_WIDTH-1:0] dout;
+    reg read;
+    reg write;
+    reg erase;
+    wire busy;
+
+    // Instantiate FLASH memory
+    flash_memory #(
+        .ADDR_WIDTH(ADDR_WIDTH),
+        .DATA_WIDTH(DATA_WIDTH)
+    ) uut (
+        .clk(clk),
+        .rst_n(rst_n),
+        .addr(addr),
+        .din(din),
+        .dout(dout),
+        .read(read),
+        .write(write),
+        .erase(erase),
+        .busy(busy)
+    );
+
+    // Clock generation
+    initial clk = 0;
+    always #5 clk = ~clk;
+
+    // Test sequence
+    initial begin
+        $display("FLASH Memory Testbench Start");
+        rst_n = 0;
+        addr = 0;
+        din = 0;
+        read = 0;
+        write = 0;
+        erase = 0;
+        #20;
+        rst_n = 1;
+        #10;
+
+        // Erase memory
+        $display("Erasing memory...");
+        erase = 1;
+        #10;
+        erase = 0;
+        wait_busy();
+
+        // Write data to address 3
+        addr = 4'd3;
+        din = 8'hA5;
+        $display("Writing 0xA5 to address 3...");
+        write = 1;
+        #10;
+        write = 0;
+        wait_busy();
+
+        // Write data to address 7
+        addr = 4'd7;
+        din = 8'h5A;
+        $display("Writing 0x5A to address 7...");
+        write = 1;
+        #10;
+        write = 0;
+        wait_busy();
+
+        // Read address 3
+        addr = 4'd3;
+        read = 1;
+        #10;
+        $display("Read address 3: dout = 0x%0h", dout);
+        read = 0;
+
+        // Read address 7
+        addr = 4'd7;
+        read = 1;
+        #10;
+        $display("Read address 7: dout = 0x%0h", dout);
+        read = 0;
+
+        // Read address 0 (should be erased value)
+        addr = 4'd0;
+        read = 1;
+        #10;
+        $display("Read address 0: dout = 0x%0h", dout);
+        read = 0;
+
+        // Erase memory again
+        $display("Erasing memory again...");
+        erase = 1;
+        #10;
+        erase = 0;
+        wait_busy();
+
+        // Read address 3 (should be erased value)
+        addr = 4'd3;
+        read = 1;
+        #10;
+        $display("Read address 3 after erase: dout = 0x%0h", dout);
+        read = 0;
+
+        $display("FLASH Memory Testbench End");
+        #20;
+        $finish;
+    end
+
+    // Task to wait for busy to clear
+    task wait_busy;
+        begin
+            while (busy) #10;
+        end
+    endtask
+
+endmodule

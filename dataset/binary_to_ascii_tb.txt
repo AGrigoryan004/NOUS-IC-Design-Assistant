@@ -1,0 +1,34 @@
+module tb_binary_to_ascii;
+
+    reg  [3:0] bin_in;
+    wire [7:0] ascii_out;
+
+    // Instantiate the DUT
+    binary_to_ascii dut (
+        .bin_in(bin_in),
+        .ascii_out(ascii_out)
+    );
+
+    // Task to display the results
+    task display_result;
+        input [3:0] bin;
+        input [7:0] ascii;
+        begin
+            $display("Binary Input: %0d (0x%0h) | ASCII Output: 0x%02h | Character: %s",
+                bin, bin, ascii, (ascii >= 8'h20 && ascii <= 8'h7E) ? {ascii} : "?" );
+        end
+    endtask
+
+    integer i;
+
+    initial begin
+        $display("==== Binary to ASCII Code Converter Testbench ====");
+        for (i = 0; i < 16; i = i + 1) begin
+            bin_in = i[3:0];
+            #1 display_result(bin_in, ascii_out);
+        end
+        $display("==== Testbench Completed ====");
+        $finish;
+    end
+
+endmodule

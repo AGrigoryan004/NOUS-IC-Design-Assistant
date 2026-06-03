@@ -1,0 +1,59 @@
+module pcie_interface #(
+    parameter DATA_WIDTH = 64,      // Width of data bus
+    parameter ADDR_WIDTH = 32       // Width of address bus
+)(
+    input  wire                   clk,         // Clock
+    input  wire                   rst_n,       // Active-low reset
+
+    // PCIe Request signals (from host)
+    input  wire                   req_valid,   // Request valid
+    input  wire [ADDR_WIDTH-1:0]  req_addr,    // Request address
+    input  wire [DATA_WIDTH-1:0]  req_wdata,   // Write data
+    input  wire                   req_write,   // Write enable
+    output wire                   req_ready,   // Ready to accept request
+
+    // PCIe Completion signals (to host)
+    output reg                    cpl_valid,   // Completion valid
+    output reg  [DATA_WIDTH-1:0]  cpl_rdata,   // Completion read data
+    input  wire                   cpl_ready    // Host ready to accept completion
+);
+
+    // Simple memory for demonstration
+    reg [DATA_WIDTH-1:0] mem [0:(1<<ADDR_WIDTH)-1];
+
+    // Handshake logic
+    reg busy;
+
+    assign req_ready = !busy;
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            busy      <= 1'b0;
+            cpl_valid <= 1'b0;
+            cpl_rdata <= {DATA_WIDTH{1'b0}};
+        end else begin
+            // Clear completion valid if host accepted
+            if (cpl_valid && cpl_ready)
+                cpl_valid <= 1'b0;
+
+            // Accept request if not busy
+            if (req_valid && req_ready) begin
+                busy <= 1'b1;
+                if (req_write) begin
+                    // Write operation
+                    mem[req_addr] <= req_wdata;
+                    cpl_valid     <= 1'b1;
+                    cpl_rdata     <= {DATA_WIDTH{1'b0}}; // No read data on write
+                end else begin
+                    // Read operation
+                    cpl_valid <= 1'b1;
+                    cpl_rdata <= mem[req_addr];
+                end
+            end else if (cpl_valid && cpl_ready) begin
+                // Transaction complete
+                busy <= 1'b0;
+            end
+        end
+    end
+
+endmodule

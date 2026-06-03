@@ -1,0 +1,113 @@
+module tb_mram_memory;
+
+    parameter ADDR_WIDTH = 4;
+    parameter DATA_WIDTH = 8;
+
+    reg clk;
+    reg rst_n;
+    reg [ADDR_WIDTH-1:0] addr;
+    reg [DATA_WIDTH-1:0] din;
+    wire [DATA_WIDTH-1:0] dout;
+    reg read;
+    reg write;
+    wire busy;
+
+    // Instantiate MRAM memory
+    mram_memory #(
+        .ADDR_WIDTH(ADDR_WIDTH),
+        .DATA_WIDTH(DATA_WIDTH)
+    ) uut (
+        .clk(clk),
+        .rst_n(rst_n),
+        .addr(addr),
+        .din(din),
+        .dout(dout),
+        .read(read),
+        .write(write),
+        .busy(busy)
+    );
+
+    // Clock generation
+    initial clk = 0;
+    always #5 clk = ~clk;
+
+    // Test sequence
+    initial begin
+        $display("MRAM Memory Testbench Start");
+        rst_n = 0;
+        addr = 0;
+        din = 0;
+        read = 0;
+        write = 0;
+        #20;
+        rst_n = 1;
+        #10;
+
+        // Write data to address 2
+        addr = 4'd2;
+        din = 8'h3C;
+        $display("Writing 0x3C to address 2...");
+        write = 1;
+        #10;
+        write = 0;
+        wait_busy();
+
+        // Write data to address 5
+        addr = 4'd5;
+        din = 8'hB7;
+        $display("Writing 0xB7 to address 5...");
+        write = 1;
+        #10;
+        write = 0;
+        wait_busy();
+
+        // Read address 2
+        addr = 4'd2;
+        read = 1;
+        #10;
+        $display("Read address 2: dout = 0x%0h", dout);
+        read = 0;
+
+        // Read address 5
+        addr = 4'd5;
+        read = 1;
+        #10;
+        $display("Read address 5: dout = 0x%0h", dout);
+        read = 0;
+
+        // Read address 0 (should be initial value, 0)
+        addr = 4'd0;
+        read = 1;
+        #10;
+        $display("Read address 0: dout = 0x%0h", dout);
+        read = 0;
+
+        // Overwrite address 2
+        addr = 4'd2;
+        din = 8'hAA;
+        $display("Overwriting address 2 with 0xAA...");
+        write = 1;
+        #10;
+        write = 0;
+        wait_busy();
+
+        // Read address 2 after overwrite
+        addr = 4'd2;
+        read = 1;
+        #10;
+        $display("Read address 2 after overwrite: dout = 0x%0h", dout);
+        read = 0;
+
+        $display("MRAM Memory Testbench End");
+        #20;
+        $finish;
+    end
+
+    // Task to wait for busy to clear
+    task wait_busy;
+        begin
+            while (busy) #10;
+        end
+    endtask
+
+endmodule

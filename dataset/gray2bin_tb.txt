@@ -1,0 +1,74 @@
+module gray2bin_tb;
+
+    parameter WIDTH = 8;
+
+    reg  [WIDTH-1:0] gray;
+    wire [WIDTH-1:0] bin;
+
+    // Instantiate the converter
+    gray2bin #(
+        .WIDTH(WIDTH)
+    ) uut (
+        .gray(gray),
+        .bin(bin)
+    );
+
+    // Task to display results
+    task display_result;
+        begin
+            $display("Time=%0t | gray=%b | bin=%b", $time, gray, bin);
+        end
+    endtask
+
+    // Function to convert binary to gray code (for testbench)
+    function [WIDTH-1:0] bin2gray;
+        input [WIDTH-1:0] bin;
+        bin2gray = {bin[WIDTH-1], bin[WIDTH-1:1] ^ bin[WIDTH-2:0]};
+    endfunction
+
+    initial begin
+        // Test case 1: All zeros
+        gray = {WIDTH{1'b0}};
+        #10; display_result();
+
+        // Test case 2: All ones
+        gray = {WIDTH{1'b1}};
+        #10; display_result();
+
+        // Test case 3: Alternating bits (10101010)
+        gray = 8'b10101010;
+        #10; display_result();
+
+        // Test case 4: Alternating bits (01010101)
+        gray = 8'b01010101;
+        #10; display_result();
+
+        // Test case 5: Single bit set (MSB)
+        gray = 8'b10000000;
+        #10; display_result();
+
+        // Test case 6: Single bit set (LSB)
+        gray = 8'b00000001;
+        #10; display_result();
+
+        // Test case 7: Random value
+        gray = 8'b01101101;
+        #10; display_result();
+
+        // Test case 8: Random value
+        gray = 8'b11001001;
+        #10; display_result();
+
+        // Test case 9: Incrementing value (binary 2 -> gray)
+        gray = bin2gray(8'b00000010);
+        #10; display_result();
+
+        // Test case 10: Decrementing value (binary 254 -> gray)
+        gray = bin2gray(8'b11111110);
+        #10; display_result();
+
+        $display("Testbench completed.");
+        $finish;
+    end
+
+endmodule
